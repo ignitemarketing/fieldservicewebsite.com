@@ -1,6 +1,7 @@
 allowBuilds:
   esbuild: true
   sharp: true
+  workerd: true
 overrides:
   http-cache-semantics: '>=4.3.0'
   source-map-js: '>=1.2.2'
