@@ -1,0 +1,37 @@
+# Dependabot configuration — keeps pnpm dependencies and the
+# SHA-pinned workflow actions current (the deploy workflow's pins
+# still target the deprecated Node.js 20 action runtime).
+#
+# Weekly on both ecosystems so a review is one sitting a week, and
+# minor/patch npm updates are grouped into a single PR.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: America/Los_Angeles
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'chore(deps)'
+    groups:
+      npm-minor-patch:
+        patterns: ['*']
+        update-types: ['minor', 'patch']
+
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: America/Los_Angeles
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'ci(deps)'
+    groups:
+      actions-minor-patch:
+        patterns: ['*']
+        update-types: ['minor', 'patch']

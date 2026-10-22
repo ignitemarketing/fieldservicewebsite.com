@@ -8,8 +8,8 @@
     "build": "astro build",
     "preview": "astro preview"
   },
-  "dependencies": {
-    "astro": "^7.3.5",
-    "@astrojs/sitemap": "^3.7.3"
+  "devDependencies": {
+    "astro": "^7.4.2",
+    "@astrojs/sitemap": "^3.7.4"
   }
 }
