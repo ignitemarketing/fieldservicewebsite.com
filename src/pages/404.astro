@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+import { content as c } from '../content';
+---
+<Base path="/404">
+  <header class="hdr">
+    <div class="wrap hdr-inner">
+      <a class="brand" href="/" aria-label={`${c.brand} home`}>{c.brand}</a>
+      <a class="hdr-cta" href="/#waitlist">{c.navCta}</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="sec">
+      <div class="wrap" style="text-align:center">
+        <span class="eyebrow">404</span>
+        <h1 style="margin-top:12px">Page not found</h1>
+        <p style="color:var(--fg-muted);margin-top:14px;font-size:1.05rem">That page doesn't exist. Head back to the home page or join the early access list.</p>
+        <div class="hero-actions" style="justify-content:center;margin-top:24px">
+          <a class="btn btn-primary" href="/">Back to home</a>
+          <a class="btn btn-ghost" href="/#waitlist">{c.navCta}</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</Base>

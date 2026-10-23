@@ -5,7 +5,8 @@
   "compatibility_date": "2026-07-01",
   "assets": {
     "directory": "./dist",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    "not_found_handling": "404-page"
   }
   // Secret (set once per Worker, do NOT commit):
   //   wrangler secret put POSTMARK_SERVER_TOKEN --name fieldservicewebsite
