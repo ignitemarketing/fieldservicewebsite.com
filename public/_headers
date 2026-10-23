@@ -1,0 +1,7 @@
+# Cloudflare Workers Static Assets header rules.
+# Hashed build output under /_astro/ is content-addressed, so it can be cached
+# forever; add a new filename whenever the content changes. HTML and other
+# public files keep Cloudflare's default `public, max-age=0, must-revalidate`.
+# https://developers.cloudflare.com/workers/static-assets/headers/
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
