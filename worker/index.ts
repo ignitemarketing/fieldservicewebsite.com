@@ -93,6 +93,12 @@ async function handleWaitlist(request: Request, env: Env): Promise<Response> {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    // www.<apex> -> <apex>, path and query kept. 308 keeps the method for non-GET requests.
+    if (url.hostname.startsWith('www.')) {
+      url.hostname = url.hostname.slice('www.'.length);
+      url.protocol = 'https:';
+      return Response.redirect(url.toString(), request.method === 'GET' || request.method === 'HEAD' ? 301 : 308);
+    }
     if (url.pathname === '/api/waitlist' && request.method === 'POST') {
       return handleWaitlist(request, env);
     }
