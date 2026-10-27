@@ -1,3 +1,8 @@
+# HSTS for every https response. No `preload` yet: the www host does not
+# resolve (issue "Create a www DNS record"), so it is not preload-eligible.
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
 # Cloudflare Workers Static Assets header rules.
 # Hashed build output under /_astro/ is content-addressed, so it can be cached
 # forever; add a new filename whenever the content changes. HTML and other
