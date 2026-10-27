@@ -6,7 +6,10 @@
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "not_found_handling": "404-page"
+    "not_found_handling": "404-page",
+    // Static files are otherwise served without running the Worker, so the
+    // http -> https redirect would never see them. Hashed /_astro/* files skip it.
+    "run_worker_first": ["/*", "!/_astro/*"]
   }
   // Secret (set once per Worker, do NOT commit):
   //   wrangler secret put POSTMARK_SERVER_TOKEN --name fieldservicewebsite

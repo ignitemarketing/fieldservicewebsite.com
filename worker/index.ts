@@ -93,6 +93,11 @@ async function handleWaitlist(request: Request, env: Env): Promise<Response> {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    // Upgrade plain HTTP. 308 keeps the method for non-GET requests (a POST must not turn into a GET).
+    if (url.protocol === 'http:') {
+      url.protocol = 'https:';
+      return Response.redirect(url.toString(), request.method === 'GET' || request.method === 'HEAD' ? 301 : 308);
+    }
     if (url.pathname === '/api/waitlist' && request.method === 'POST') {
       return handleWaitlist(request, env);
     }
