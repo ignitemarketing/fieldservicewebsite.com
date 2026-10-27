@@ -130,13 +130,41 @@ async function handleWaitlist(request: Request, env: Env): Promise<Response> {
   return json({ ok: true });
 }
 
+// Browser security headers for responses the Worker produces. Static assets
+// are served by Cloudflare without running this Worker, so public/_headers
+// carries the same set for them: keep the two in sync.
+// script-src 'self' relies on astro.config.mjs keeping the waitlist script out
+// of the HTML (vite assetsInlineLimit: 0); inline styles are still used.
+const SECURITY_HEADERS: Record<string, string> = {
+  'Content-Security-Policy':
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+    "font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; " +
+    "frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  'Cross-Origin-Opener-Policy': 'same-origin',
+};
+
+function withSecurityHeaders(res: Response): Response {
+  // Redirects and 101s can have immutable headers; copy into a fresh Response.
+  const headers = new Headers(res.headers);
+  for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
+async function route(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
+  if (url.pathname === '/api/waitlist') {
+    return handleWaitlist(request, env);
+  }
+  // Everything else is a static asset from the Astro build output.
+  return env.ASSETS.fetch(request);
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
-    if (url.pathname === '/api/waitlist') {
-      return handleWaitlist(request, env);
-    }
-    // Everything else is a static asset from the Astro build output.
-    return env.ASSETS.fetch(request);
+    return withSecurityHeaders(await route(request, env));
   },
 };
