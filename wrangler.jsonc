@@ -10,7 +10,15 @@
     // Static files are otherwise served without running the Worker, so Worker-side
     // redirects would never see them. Hashed /_astro/* files skip it.
     "run_worker_first": ["/*", "!/_astro/*"]
-  }
+  },
+  // Per-IP limit on POST /api/waitlist (each accepted POST sends a Postmark email).
+  "ratelimits": [
+    {
+      "name": "WAITLIST_LIMITER",
+      "namespace_id": "4810",
+      "simple": { "limit": 5, "period": 60 }
+    }
+  ]
   // Secret (set once per Worker, do NOT commit):
   //   wrangler secret put POSTMARK_SERVER_TOKEN --name fieldservicewebsite
   // Signup notifications are emailed via Postmark to colin+newco@colingreig.com.
