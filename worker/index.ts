@@ -1,6 +1,8 @@
 export interface Env {
   ASSETS: Fetcher;
   POSTMARK_SERVER_TOKEN: string;
+  // Workers rate-limit binding (wrangler.jsonc `ratelimits`); absent in local runs.
+  WAITLIST_LIMITER?: { limit(options: { key: string }): Promise<{ success: boolean }> };
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -10,21 +12,59 @@ const ALLOWED_FSM = ['Jobber', 'ServiceTitan', 'Housecall Pro', 'Other', ''];
 const NOTIFY_TO = 'colin+newco@colingreig.com';
 const NOTIFY_FROM = 'newco@jdmbuysell.com';
 
+// A real signup is well under 1 KB; anything bigger is junk or abuse.
+const MAX_BODY_BYTES = 4096;
+const MAX_SOURCE_CHARS = 100;
+
+const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json', ...headers },
+  });
+
 async function handleWaitlist(request: Request, env: Env): Promise<Response> {
-  const json = (body: unknown, status = 200) =>
-    new Response(JSON.stringify(body), {
-      status,
-      headers: { 'content-type': 'application/json' },
-    });
+  if (request.method !== 'POST') {
+    return json({ ok: false, error: 'method_not_allowed' }, 405, { allow: 'POST' });
+  }
+
+  // Browser form posts from our own pages send Sec-Fetch-Site and/or Origin.
+  const origin = request.headers.get('origin');
+  const sameOrigin =
+    request.headers.get('sec-fetch-site') === 'same-origin' ||
+    (origin !== null && origin === new URL(request.url).origin);
+  if (!sameOrigin) {
+    return json({ ok: false, error: 'forbidden' }, 403);
+  }
+
+  // Cheap rejects before the body is read.
+  const declared = Number(request.headers.get('content-length') ?? 0);
+  if (declared > MAX_BODY_BYTES) {
+    return json({ ok: false, error: 'payload_too_large' }, 413);
+  }
+  if (env.WAITLIST_LIMITER) {
+    const key = request.headers.get('cf-connecting-ip') || 'unknown';
+    const { success } = await env.WAITLIST_LIMITER.limit({ key });
+    if (!success) {
+      return json({ ok: false, error: 'rate_limited' }, 429, { 'retry-after': '60' });
+    }
+  }
 
   let data: Record<string, unknown>;
   try {
+    // content-length can be absent (chunked) or wrong, so cap the bytes actually read.
+    const raw = await request.text();
+    if (new TextEncoder().encode(raw).length > MAX_BODY_BYTES) {
+      return json({ ok: false, error: 'payload_too_large' }, 413);
+    }
     const ct = request.headers.get('content-type') || '';
     if (ct.includes('application/json')) {
-      data = await request.json();
+      data = JSON.parse(raw);
     } else {
-      const form = await request.formData();
+      const form = await new Response(raw, { headers: { 'content-type': ct } }).formData();
       data = Object.fromEntries(form.entries());
+    }
+    if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+      throw new Error('not an object');
     }
   } catch {
     return json({ ok: false, error: 'bad_request' }, 400);
@@ -37,7 +77,7 @@ async function handleWaitlist(request: Request, env: Env): Promise<Response> {
 
   const email = String(data.email ?? '').trim().toLowerCase();
   const fsm = String(data.fsm ?? '').trim();
-  const source = String(data.source ?? '').trim() || 'unknown';
+  const source = String(data.source ?? '').trim().slice(0, MAX_SOURCE_CHARS) || 'unknown';
   const page = String(data.page ?? '').slice(0, 300);
 
   if (!EMAIL_RE.test(email) || email.length > 254) {
@@ -93,7 +133,7 @@ async function handleWaitlist(request: Request, env: Env): Promise<Response> {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname === '/api/waitlist' && request.method === 'POST') {
+    if (url.pathname === '/api/waitlist') {
       return handleWaitlist(request, env);
     }
     // Everything else is a static asset from the Astro build output.
