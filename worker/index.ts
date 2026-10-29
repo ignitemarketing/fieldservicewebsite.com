@@ -2,16 +2,17 @@ export interface Env {
   ASSETS: Fetcher;
 }
 
-// Browser security headers for responses the Worker produces. Static assets
-// are served by Cloudflare without running this Worker, so public/_headers
-// carries the same set for them: keep the two in sync.
+// Browser security headers. wrangler.jsonc runs the Worker first for every
+// path except /_astro/*, so this is the one place the Content-Security-Policy
+// is defined; public/_headers deliberately does not carry a CSP, because the
+// Worker would overwrite it.
 // script-src 'self' relies on astro.config.mjs keeping the waitlist script out
 // of the HTML (vite assetsInlineLimit: 0); inline styles are still used.
-// challenges.cloudflare.com is the Turnstile widget on the waitlist form.
+// challenges.cloudflare.com (script-src and frame-src) is the Turnstile widget on the waitlist form.
 const SECURITY_HEADERS: Record<string, string> = {
   'Content-Security-Policy':
     "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-    "font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; " +
+    "font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-src https://challenges.cloudflare.com; " +
     "frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
