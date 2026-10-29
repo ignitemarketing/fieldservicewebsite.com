@@ -3,6 +3,9 @@
   "name": "fieldservicewebsite",
   "main": "worker/index.ts",
   "compatibility_date": "2026-07-01",
+  // Serve only the custom domain: no <name>.colin4567.workers.dev or preview-URL copy of the site.
+  "workers_dev": false,
+  "preview_urls": false,
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
